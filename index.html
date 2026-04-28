@@ -5,20 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>聊天设置中心</title>
     <style>
-        /* 全局样式设定 */
         :root {
             --wechat-green: #07c160;
             --wechat-bg: #ededed;
             --text-main: #000000;
             --text-grey: #888888;
-            --accent-red: #fa5151;
+            --accent-red: #fa5151; /* 微信标准警示红 */
         }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
             background-color: var(--wechat-bg);
             margin: 0;
-            padding: 0;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -26,7 +24,7 @@
             overflow: hidden;
         }
 
-        /* 核心卡片样式 */
+        /* 主卡片容器 */
         .pay-card {
             background: #ffffff;
             width: 88%;
@@ -35,10 +33,9 @@
             padding: 40px 24px;
             text-align: center;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
-            transition: all 0.3s ease;
+            transition: opacity 0.3s ease;
         }
 
-        /* 图标样式 */
         .icon-box {
             width: 64px;
             height: 64px;
@@ -53,38 +50,9 @@
             font-weight: bold;
         }
 
-        .icon-error {
-            background: var(--accent-red);
-        }
+        .amount { font-size: 48px; font-weight: 600; color: #333; margin-bottom: 40px; }
+        .amount span { font-size: 24px; margin-right: 4px; }
 
-        /* 文字内容 */
-        h2 {
-            font-size: 20px;
-            margin: 0 0 12px;
-            color: var(--text-main);
-        }
-
-        p {
-            font-size: 15px;
-            color: var(--text-grey);
-            line-height: 1.6;
-            margin: 0 0 32px;
-        }
-
-        /* 金额显示 */
-        .amount {
-            font-size: 48px;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 40px;
-        }
-
-        .amount span {
-            font-size: 24px;
-            margin-right: 4px;
-        }
-
-        /* 按钮样式 */
         .btn-pay {
             background-color: var(--wechat-green);
             color: #ffffff;
@@ -93,88 +61,173 @@
             border-radius: 8px;
             font-size: 17px;
             font-weight: 500;
-            cursor: pointer;
             width: 100%;
-            -webkit-tap-highlight-color: transparent;
+            cursor: pointer;
+            outline: none;
         }
 
-        .btn-pay:active {
-            opacity: 0.8;
+        /* 模拟支付弹窗层 */
+        #payOverlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: flex-end;
         }
 
-        /* 底部链接 */
-        .footer-link {
-            display: block;
-            margin-top: 24px;
-            font-size: 14px;
-            color: #576b95;
-            text-decoration: none;
+        .pay-sheet {
+            background: white;
+            width: 100%;
+            border-radius: 12px 12px 0 0;
+            padding: 20px;
+            box-sizing: border-box;
+            animation: slideUp 0.3s ease-out;
+            text-align: center;
         }
 
-        /* 强力警告样式（用于无可奉告页面） */
-        .no-comment-text {
+        /* 密码输入框提示文字 */
+        .pwd-hint {
+            font-size: 13px;
             color: var(--accent-red);
-            font-size: 24px;
-            font-weight: 900;
-            margin: 40px 0;
-            letter-spacing: 2px;
+            margin: -10px 0 15px 0;
         }
+
+        .password-box {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 20px 0;
+        }
+
+        .dot {
+            width: 42px; height: 42px; border: 1px solid #ddd;
+            display: flex; justify-content: center; align-items: center; font-size: 20px;
+        }
+
+        /* 动画与状态 */
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 16px; height: 16px;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @keyframes heartBeat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+        }
+
+        .no-comment-text { color: var(--accent-red); font-size: 22px; font-weight: 900; margin: 25px 0; }
     </style>
 </head>
 <body>
 
 <div class="pay-card" id="displayBox">
-    <div id="paymentMode">
+    <div id="initialState">
         <div class="icon-box">¥</div>
-        <h2>聊天频道已锁定</h2>
-        <p>根据《亲情关系维护协议》，继续对话需支付小额解锁金。</p>
-        <div class="amount"><span>¥</span>520</div>
-        <button class="btn-pay" onclick="handlePay()">立即支付解锁</button>
-        <a href="javascript:void(0);" class="footer-link" onclick="showNoComment()">为什么需要支付？</a>
+        <h2 style="font-size:20px;">聊天频道已锁定</h2>
+        <p style="color:#888; font-size:14px;">检测到由于亲情值过高，需支付解锁金以继续对话。</p>
+        <div class="amount"><span>¥</span>0.52</div>
+        <button class="btn-pay" onclick="openPaySheet()">立即支付解锁</button>
+        <a href="javascript:void(0);" onclick="showNoComment()" style="display:block; margin-top:24px; color:#576b95; text-decoration:none; font-size:14px;">为什么需要支付？</a>
     </div>
 </div>
+
+<div id="payOverlay">
+    <div class="pay-sheet">
+        <div style="display:flex; justify-content:space-between; margin-bottom:20px; align-items:center;">
+            <span onclick="closePaySheet()" style="font-size:28px; color:#999; cursor:pointer; padding:0 10px;">×</span>
+            <b style="font-size:17px;">请输入支付密码</b>
+            <span style="width:40px;"></span>
+        </div>
+        <p style="margin:0; color:#333; font-size:15px;">向【好大儿】付款</p>
+        <h2 style="font-size:36px; margin:15px 0;">¥ 0.52</h2>
+        
+        <p class="pwd-hint">请输入支付密码（密码是111111）</p>
+
+        <div class="password-box">
+            <div class="dot">●</div><div class="dot">●</div><div class="dot">●</div>
+            <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+        </div>
+        <button class="btn-pay" id="confirmBtn" onclick="confirmSuccess()">确认支付</button>
+    </div>
+</div>
+
 <script>
     const displayBox = document.getElementById('displayBox');
+    const payOverlay = document.getElementById('payOverlay');
 
-    // 处理支付点击
-    function handlePay() {
-        displayBox.style.opacity = '0';
-        setTimeout(() => {
-            displayBox.innerHTML = `
-                <div class="icon-box" style="background: #ff4757;">❤️</div>
-                <h2>解锁成功</h2>
-                <p>亲爱的老妈：<br>您的聊天额度已恢复。<br><br><b>解锁奖励：</b><br>获得“好大儿”视频陪聊 30 分钟。</p>
-                <button class="btn-pay" style="background: #333;" onclick="location.reload()">我知道了</button>
-            `;
-            displayBox.style.opacity = '1';
-        }, 300);
+    // 打开支付框
+    function openPaySheet() {
+        payOverlay.style.display = 'flex';
     }
 
-    // 处理“无可奉告”点击
-    function showNoComment() {
-        const originalContent = displayBox.innerHTML;
-        displayBox.style.opacity = '0';
+    // 关闭支付框
+    function closePaySheet() {
+        payOverlay.style.display = 'none';
+    }
 
+    // 支付验证成功逻辑
+    function confirmSuccess() {
+        const btn = document.getElementById('confirmBtn');
+        btn.disabled = true;
+        btn.style.background = "#999";
+        btn.innerHTML = '<span class="loading-spinner"></span> 正在验证...';
+
+        // 模拟 1.5 秒扣款处理
+        setTimeout(() => {
+            payOverlay.style.display = 'none';
+            displayBox.style.opacity = '0';
+
+            setTimeout(() => {
+                displayBox.innerHTML = `
+                    <div class="icon-box" style="background: #ff4757; animation: heartBeat 1s infinite;">❤️</div>
+                    <h2>支付成功</h2>
+                    <p style="color:#666; line-height:1.8; text-align:left; padding:0 10px;">
+                        亲爱的老妈：<br>
+                        您的爱心已送达！当前聊天频道已永久解锁。<br><br>
+                        <span style="color:#07c160; font-weight:bold;">【解锁奖励】</span><br>
+                        1. 儿子要钱无数次<br>
+                        2. 视频陪聊无限次
+                    </p>
+                    <button class="btn-pay" style="background: #333; margin-top:20px;" onclick="location.reload()">太划算了！</button>
+                `;
+                displayBox.style.opacity = '1';
+            }, 300);
+        }, 1500);
+    }
+
+    // 无可奉告逻辑
+    function showNoComment() {
+        const original = displayBox.innerHTML;
+        displayBox.style.opacity = '0';
+        
         setTimeout(() => {
             displayBox.innerHTML = `
-                <div class="icon-box icon-error">!</div>
-                <h2>系统提示</h2>
+                <div class="icon-box" style="background:#fa5151;">!</div>
+                <h2 style="font-size:20px;">系统提示</h2>
                 <div class="no-comment-text">无可奉告！！！</div>
-                
-                <img src="biaoqing.jpg" style="width: 150px; height: auto; margin: 0 auto 20px; display: block; border-radius: 8px;">
-                
-                <p style="color: #999;">页面将在 5 秒后自动关闭...</p>
+                <img src="biaoqing.jpg" style="width:140px; height:auto; margin-bottom:20px; border-radius:8px;" onerror="this.alt='[表情包：无可奉告]';this.style.color='#999'">
+                <p style="color:#999; font-size:13px;">页面将在 5 秒后自动关闭...</p>
             `;
             displayBox.style.opacity = '1';
 
-            // 稍微延长一点时间到 5 秒，让老妈看清表情包
             setTimeout(() => {
                 displayBox.style.opacity = '0';
-                setTimeout(() => {
-                    displayBox.innerHTML = originalContent;
-                    displayBox.style.opacity = '1';
+                setTimeout(() => { 
+                    displayBox.innerHTML = original; 
+                    displayBox.style.opacity = '1'; 
                 }, 300);
-            }, 5000); 
+            }, 5000);
         }, 300);
     }
 </script>
