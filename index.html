@@ -133,7 +133,6 @@
         <a href="javascript:void(0);" class="footer-link" onclick="showNoComment()">为什么需要支付？</a>
     </div>
 </div>
-
 <script>
     const displayBox = document.getElementById('displayBox');
 
@@ -160,19 +159,22 @@
             displayBox.innerHTML = `
                 <div class="icon-box icon-error">!</div>
                 <h2>系统提示</h2>
-                <div class="no-comment-text">没有原因，无可奉告！！！</div>
-                <p>页面将在 3 秒后自动关闭...</p>
+                <div class="no-comment-text">无可奉告！！！</div>
+                
+                <img src="biaoqing.jpg" style="width: 150px; height: auto; margin: 0 auto 20px; display: block; border-radius: 8px;">
+                
+                <p style="color: #999;">页面将在 5 秒后自动关闭...</p>
             `;
             displayBox.style.opacity = '1';
 
-            // 3秒后跳回
+            // 稍微延长一点时间到 5 秒，让老妈看清表情包
             setTimeout(() => {
                 displayBox.style.opacity = '0';
                 setTimeout(() => {
                     displayBox.innerHTML = originalContent;
                     displayBox.style.opacity = '1';
                 }, 300);
-            }, 3000);
+            }, 5000); 
         }, 300);
     }
 </script>
