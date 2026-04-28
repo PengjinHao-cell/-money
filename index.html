@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>微信安全支付中心</title>
+    <style>
+        /* 全局样式设定 */
+        :root {
+            --wechat-green: #07c160;
+            --wechat-bg: #ededed;
+            --text-main: #000000;
+            --text-grey: #888888;
+            --accent-red: #fa5151;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--wechat-bg);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 核心卡片样式 */
+        .pay-card {
+            background: #ffffff;
+            width: 88%;
+            max-width: 360px;
+            border-radius: 16px;
+            padding: 40px 24px;
+            text-align: center;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        /* 图标样式 */
+        .icon-box {
+            width: 64px;
+            height: 64px;
+            background: var(--wechat-green);
+            border-radius: 14px;
+            margin: 0 auto 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #ffffff;
+            font-size: 40px;
+            font-weight: bold;
+        }
+
+        .icon-error {
+            background: var(--accent-red);
+        }
+
+        /* 文字内容 */
+        h2 {
+            font-size: 20px;
+            margin: 0 0 12px;
+            color: var(--text-main);
+        }
+
+        p {
+            font-size: 15px;
+            color: var(--text-grey);
+            line-height: 1.6;
+            margin: 0 0 32px;
+        }
+
+        /* 金额显示 */
+        .amount {
+            font-size: 48px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 40px;
+        }
+
+        .amount span {
+            font-size: 24px;
+            margin-right: 4px;
+        }
+
+        /* 按钮样式 */
+        .btn-pay {
+            background-color: var(--wechat-green);
+            color: #ffffff;
+            border: none;
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 17px;
+            font-weight: 500;
+            cursor: pointer;
+            width: 100%;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn-pay:active {
+            opacity: 0.8;
+        }
+
+        /* 底部链接 */
+        .footer-link {
+            display: block;
+            margin-top: 24px;
+            font-size: 14px;
+            color: #576b95;
+            text-decoration: none;
+        }
+
+        /* 强力警告样式（用于无可奉告页面） */
+        .no-comment-text {
+            color: var(--accent-red);
+            font-size: 24px;
+            font-weight: 900;
+            margin: 40px 0;
+            letter-spacing: 2px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="pay-card" id="displayBox">
+    <div id="paymentMode">
+        <div class="icon-box">¥</div>
+        <h2>聊天频道已锁定</h2>
+        <p>根据《亲情关系维护协议》，继续对话需支付小额解锁金。</p>
+        <div class="amount"><span>¥</span>0.52</div>
+        <button class="btn-pay" onclick="handlePay()">立即支付解锁</button>
+        <a href="javascript:void(0);" class="footer-link" onclick="showNoComment()">为什么需要支付？</a>
+    </div>
+</div>
+
+<script>
+    const displayBox = document.getElementById('displayBox');
+
+    // 处理支付点击
+    function handlePay() {
+        displayBox.style.opacity = '0';
+        setTimeout(() => {
+            displayBox.innerHTML = `
+                <div class="icon-box" style="background: #ff4757;">❤️</div>
+                <h2>解锁成功</h2>
+                <p>亲爱的老妈：<br>您的聊天额度已恢复。<br><br><b>解锁奖励：</b><br>获得“好大儿”视频陪聊 30 分钟。</p>
+                <button class="btn-pay" style="background: #333;" onclick="location.reload()">我知道了</button>
+            `;
+            displayBox.style.opacity = '1';
+        }, 300);
+    }
+
+    // 处理“无可奉告”点击
+    function showNoComment() {
+        const originalContent = displayBox.innerHTML;
+        displayBox.style.opacity = '0';
+
+        setTimeout(() => {
+            displayBox.innerHTML = `
+                <div class="icon-box icon-error">!</div>
+                <h2>系统提示</h2>
+                <div class="no-comment-text">没有原因，无可奉告！！！</div>
+                <p>页面将在 3 秒后自动关闭...</p>
+            `;
+            displayBox.style.opacity = '1';
+
+            // 3秒后跳回
+            setTimeout(() => {
+                displayBox.style.opacity = '0';
+                setTimeout(() => {
+                    displayBox.innerHTML = originalContent;
+                    displayBox.style.opacity = '1';
+                }, 300);
+            }, 3000);
+        }, 300);
+    }
+</script>
+
+</body>
+</html>
